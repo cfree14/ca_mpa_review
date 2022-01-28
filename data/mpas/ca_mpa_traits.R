@@ -198,14 +198,25 @@ g2 <- ggplot(data, mapping=aes(x=shore_span_km, fill=bioregion)) +
   theme(legend.position = "none")
 g2
 
+# Depth range
+g3 <- ggplot(data) +
+  geom_segment(mapping=aes(y=reorder(name_short, max_depth_m),
+                           yend=reorder(name_short, max_depth_m),
+                           x=min_depth_m, xend=max_depth_m)) +
+  # Labels
+  labs(x="Depth profile (m)", y="MPA") +
+  # Theme
+  theme_bw() + my_theme +
+  theme(axis.ticks.y=element_blank(),
+        axis.text.y=element_blank())
+g3
 
 # Merge
-g <- gridExtra::grid.arrange(g1, g2, nrow=1)
-
+g <- gridExtra::grid.arrange(g1, g2, g3, nrow=1)
 
 # Export
 ggsave(g, filename=file.path(plotdir, "ca_mpa_size.png"),
-       width=5, height=2.25, units="in", dpi=600)
+       width=6.5, height=2.25, units="in", dpi=600)
 
 
 # Habitat area
@@ -215,6 +226,25 @@ ggsave(g, filename=file.path(plotdir, "ca_mpa_size.png"),
 hab_theme <- theme(axis.text=element_text(size=6),
                    axis.title=element_text(size=8),
                    axis.title.y=element_blank(),
+                   legend.text=element_text(size=6),
+                   legend.title=element_text(size=7),
+                   strip.text=element_text(size=7),
+                   plot.title=element_blank(),
+                   # Gridlines
+                   panel.grid.major = element_blank(),
+                   panel.grid.minor = element_blank(),
+                   panel.background = element_blank(),
+                   axis.line = element_line(colour = "black"),
+                   # Legend
+                   legend.key.size = unit(0.3, "cm"),
+                   legend.background = element_rect(fill=alpha('blue', 0)))
+
+# New theme
+hab_theme_wide <- theme(axis.text=element_text(size=6),
+                   axis.title=element_text(size=8),
+                   axis.title.x=element_blank(),
+                   axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=5),
+                   axis.text.y = element_text(angle = 90, hjust = 0.5),
                    legend.text=element_text(size=6),
                    legend.title=element_text(size=7),
                    strip.text=element_text(size=7),
@@ -271,27 +301,45 @@ colnames1 <- colnames(data)
 hab_area_names_full <- colnames1[grepl("km", colnames1)]
 hab_area_names_coast <- hab_area_names_full[!hab_area_names_full %in% hab_area_names]
 
+# Jacob told me to use these columns:
+# Sandy_beach_km
+# Rocky_inter_km
+# Coastal_marsh_km
+# Tidal_flats_km
+# Hardened_armored_shore_km
+
 # Build habitat data
 hab_data_coast <- data %>%
   # Simplify
-  select(bioregion, name, name_short, designation, shore_span_km, hab_area_names_coast) %>%
+  select(bioregion, name, name_short, designation,
+         sandy_beach_km, rocky_inter_km, coastal_marsh_km, tidal_flats_km, hardened_armored_shore_km) %>%
   # Gather
-  gather(key="habitat", value="habitat_km", 6:ncol(.)) %>%
+  gather(key="habitat", value="habitat_km", 5:ncol(.)) %>%
+  # Recode habitat
+  mutate(habitat=recode(habitat,
+                        "sandy_beach_km"="Sandy beach",
+                        "rocky_inter_km"="Rocky intertidal",
+                        "coastal_marsh_km"="Coastal marsh",
+                        "tidal_flats_km"="Tidal flats",
+                        "hardened_armored_shore_km"="Armored shore")) %>%
   # Add proportion
-  mutate(habitat_prop=habitat_km/shore_span_km)
+  group_by(name) %>%
+  mutate(habitat_prop=habitat_km/sum(habitat_km))
 
 # Plot data
 g2 <- ggplot(hab_data_coast, aes(y=name_short, x=habitat_prop, fill=habitat)) +
   # Facet
   facet_grid(bioregion~., space="free_y", scales="free_y") +
   # Bar plot
-  geom_bar(stat="identity") +
+  geom_bar(stat="identity", color="grey30", lwd=0.1) +
   # Reference line
   geom_vline(xintercept=1) +
   # Labels
-  labs(x="Proportion of MPA coastline", y="") +
+  labs(x="Percentage of coastline", y="") +
+  scale_x_continuous(breaks=seq(0,1,0.2), labels=scales::percent) +
   # Legend
-  scale_fill_discrete(name="Habitat type") +
+  scale_fill_manual(name="Habitat type",
+                    values=c("grey20", "darkgreen", "lightskyblue3", "gold1", "tan4")) +
   # Theme
   theme_bw() + hab_theme
 g2
@@ -299,6 +347,28 @@ g2
 # Export
 ggsave(g2, filename=file.path(plotdir, "ca_mpa_habitat_coast.png"),
        width=6.5, height=8, units="in", dpi=600)
+
+
+# Plot data
+g2 <- ggplot(hab_data_coast, aes(x=name_short, y=habitat_prop, fill=habitat)) +
+  # Facet
+  facet_grid(.~bioregion, space="free_x", scales="free_x") +
+  # Bar plot
+  geom_bar(stat="identity", color="grey30", lwd=0.1) +
+  # Labels
+  labs(y="Percentage of coastline", x="") +
+  scale_y_continuous(breaks=seq(0,1,0.2), labels=scales::percent) +
+  # Legend
+  scale_fill_manual(name="Habitat type",
+                    values=c("grey20", "darkgreen", "lightskyblue3", "gold1", "tan4")) +
+  # Theme
+  theme_bw() + hab_theme_wide +
+  theme(legend.position = "bottom")
+g2
+
+# Export
+ggsave(g2, filename=file.path(plotdir, "ca_mpa_habitat_coast_wide.png"),
+       width=8, height=4, units="in", dpi=600)
 
 
 
