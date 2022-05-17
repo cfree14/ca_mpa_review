@@ -33,9 +33,9 @@ data <- data_orig %>%
          implementation_year=year(implementation_date)) %>%
   # Update region
   mutate(bioregion=recode_factor(bioregion,
-                                 "NorCal"="Northern",
+                                 "SoCal"="Southern",
                                  "CenCal"="Central",
-                                 "SoCal"="Southern")) %>%
+                                 "NorCal"="Northern")) %>%
   # Shorten name
   mutate(name_short=gsub(" SMCA| SMR| SMRMA", "", name)) %>%
   # Fix duplicated short names
@@ -44,9 +44,14 @@ data <- data_orig %>%
   ungroup() %>%
   mutate(name_short=ifelse(n==2, name, name_short)) %>%
   select(-n) %>%
-  # Convert to numeric
-  # mutate(shore_span_km=as.numeric(shore_span_km),
-  #        coastal_marsh_km1=as.numeric(coastal_marsh_km)) %>%
+  # Order protection
+  mutate(protection=stringr::str_to_sentence(protection),
+         protection=recode(protection,
+                           "Moderate low"="Moderate-low",
+                           "Moderate high"="Moderate-high"),
+         protection=factor(protection,
+                           levels=c("Low", "Moderate-low", "Moderate", "Moderate-high",
+                                    "High", "Very high"))) %>%
   # Arrange
   select(bioregion,
          name, name_short,
@@ -56,7 +61,6 @@ data <- data_orig %>%
 # Confirm unique IDS
 anyDuplicated(data$name)
 freeR::which_duplicated(data$name_short)
-
 
 # Inspect
 str(data)

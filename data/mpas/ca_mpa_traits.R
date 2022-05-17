@@ -219,6 +219,72 @@ ggsave(g, filename=file.path(plotdir, "ca_mpa_size.png"),
        width=6.5, height=2.25, units="in", dpi=600)
 
 
+# Protection
+################################################################################
+
+tier_n <- data %>%
+  count(bioregion, tier) %>%
+  group_by(bioregion) %>%
+  mutate(prop=n/sum(n))
+
+g1 <- ggplot(tier_n , aes(y=bioregion, x=prop, fill=as.character(tier))) +
+  geom_bar(stat="identity") +
+  # Labels
+  labs(x="Percentage of MPAs", y="") +
+  scale_x_continuous(labels=scales::percent) +
+  # Legend
+  scale_fill_ordinal(name="Tier") +
+  guides(fill=guide_legend(title.position="top")) +
+  # Theme
+  theme_bw() + my_theme +
+  theme(legend.position = "bottom")
+g1
+
+protection_n <- data %>%
+  count(bioregion, protection) %>%
+  group_by(bioregion) %>%
+  mutate(prop=n/sum(n))
+
+g2 <- ggplot(protection_n , aes(y=bioregion, x=prop, fill=protection)) +
+  geom_bar(stat="identity") +
+  # Labels
+  labs(x="Percentage of MPAs", y="") +
+  scale_x_continuous(labels=scales::percent) +
+  # Legend
+  scale_fill_ordinal(name="Level of protection") +
+  guides(fill=guide_legend(title.position="top")) +
+  # Theme
+  theme_bw() + my_theme +
+  theme(legend.position = "bottom")
+g2
+
+take_n <- data %>%
+  count(bioregion, take) %>%
+  group_by(bioregion) %>%
+  mutate(prop=n/sum(n))
+
+g3 <- ggplot(take_n , aes(y=bioregion, x=prop, fill=take)) +
+  geom_bar(stat="identity") +
+  # Labels
+  labs(x="Percentage of MPAs", y="") +
+  scale_x_continuous(labels=scales::percent) +
+  # Legend
+  scale_fill_ordinal(name="Take?") +
+  guides(fill=guide_legend(title.position="top")) +
+  # Theme
+  theme_bw() + my_theme +
+  theme(legend.position = "bottom")
+g3
+
+# Merge
+g <- gridExtra::grid.arrange(g1, g2, g3, nrow=1)
+g
+
+# Export
+ggsave(g, filename=file.path(plotdir, "ca_mpa_protection.png"),
+       width=6.5, height=2.25, units="in", dpi=600)
+
+
 # Habitat area
 ################################################################################
 
@@ -261,28 +327,67 @@ hab_theme_wide <- theme(axis.text=element_text(size=6),
 # Column names
 colnames1 <- colnames(data)
 hab_area_names <- colnames1[grepl("km2", colnames1)]
+# us
 
 # Build habitat data
 hab_data <- data %>%
   # Simplify
-  select(bioregion, name, name_short, designation, area_km2, hab_area_names) %>%
+  select(bioregion, name, name_short, designation, area_km2,
+         hard_substrate_mapped_0_30m_km2,
+         hard_substrate_30_100m_km2,
+         hard_substrate_100_200m_km2,
+         hard_substrate_200_3000m_km2,
+         soft_substrate_0_30m_km2,
+         soft_substrate_30_100m_km2,
+         soft_substrate_100_200m_km2,
+         soft_substrate_200_3000m_km2,
+         submarine_canyon_0_30m_km2,
+         submarine_canyon_30_100m_km2,
+         submarine_canyon_100_200m_km2,
+         estuary_km2,
+         eelgrass_km2,
+         coastal_marsh_km2) %>%
   # Gather
   gather(key="habitat", value="habitat_km2", 6:ncol(.)) %>%
+  # Recode habitat
+  mutate(habitat=recode_factor(habitat,
+                               "soft_substrate_0_30m_km2"="Soft substrate (0-30m)",
+                               "soft_substrate_30_100m_km2"="Soft substrate (30-100m)",
+                               "soft_substrate_100_200m_km2"="Soft substrate (100-200m)",
+                               "soft_substrate_200_3000m_km2"="Soft substrate (200-3000m)",
+                               "hard_substrate_mapped_0_30m_km2"="Hard substrate (0-30m)",
+                               "hard_substrate_30_100m_km2"="Hard substrate (30-100m)",
+                               "hard_substrate_100_200m_km2"="Hard substrate (100-200m)",
+                               "hard_substrate_200_3000m_km2"="Hard substrate (200-3000m)",
+                               "submarine_canyon_0_30m_km2"="Submarine canyon (0-30m)",
+                               "submarine_canyon_30_100m_km2"="Submarine canyon (30-100m)",
+                               "submarine_canyon_100_200m_km2"="Submarine canyon (100-200m)",
+                               "eelgrass_km2"="Eelgrass",
+                               "max_kelp_canopy_cdfw_km2"="Kelp canopy",
+                               "coastal_marsh_km2"="Coastal marsh",
+                               "estuary_km2"="Estuary")) %>%
   # Add proportion
   mutate(habitat_prop=habitat_km2/area_km2)
+
+
 
 # Plot data
 g1 <- ggplot(hab_data, aes(y=name_short, x=habitat_prop, fill=habitat)) +
   # Facet
   facet_grid(bioregion~., space="free_y", scales="free_y") +
   # Bar plot
-  geom_bar(stat="identity") +
+  geom_bar(stat="identity", color="grey30", lwd=0.1) +
   # Reference line
   geom_vline(xintercept=1) +
   # Labels
-  labs(x="Proportion of MPA area", y="") +
+  labs(x="Percentage of MPA area", y="") +
+  scale_x_continuous(labels=scales::percent) +
   # Legend
-  scale_fill_discrete(name="Habitat type") +
+  scale_fill_manual(name="Habitat type",
+                    values=c("orange1", "orange2", "orange3", "orange4",
+                             "lightsteelblue1", "lightsteelblue2", "lightsteelblue3", "lightsteelblue4",
+                             "purple1", "purple2", "purple3",
+                             "palegreen1", "palegreen3", "palegreen4")) +
   # Theme
   theme_bw() + hab_theme
 g1
@@ -290,6 +395,31 @@ g1
 # Export
 ggsave(g1, filename=file.path(plotdir, "ca_mpa_habitat_area.png"),
        width=6.5, height=8, units="in", dpi=600)
+
+# Plot data
+g2 <- ggplot(hab_data, aes(x=name_short, y=habitat_prop, fill=habitat)) +
+  # Facet
+  facet_grid(.~bioregion, space="free_x", scales="free_x") +
+  # Bar plot
+  geom_bar(stat="identity", color="grey30", lwd=0.1) +
+  geom_hline(yintercept = 1) +
+  # Labels
+  labs(y="Percentage of MPA area", x="") +
+  scale_y_continuous(breaks=seq(0,2,0.5), labels=scales::percent) +
+  # Legend
+  scale_fill_manual(name="Habitat type",
+                    values=c("orange1", "orange2", "orange3", "orange4",
+                             "lightsteelblue1", "lightsteelblue2", "lightsteelblue3", "lightsteelblue4",
+                             "purple1", "purple2", "purple3",
+                             "palegreen1", "palegreen3", "palegreen4")) +
+  # Theme
+  theme_bw() + hab_theme_wide +
+  theme(legend.position = "bottom")
+g2
+
+# Export
+ggsave(g2, filename=file.path(plotdir, "ca_mpa_habitat_area_wide.png"),
+       width=8, height=4, units="in", dpi=600)
 
 
 

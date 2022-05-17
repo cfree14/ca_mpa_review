@@ -30,6 +30,14 @@ wgs84 <- sf::st_crs("+proj=longlat +datum=WGS84")
 data_df_orig <- data_orig %>%
   sf::st_drop_geometry()
 
+# Compute centroids
+centroids <- data_orig %>%
+  sf::st_transform(crs=wgs84) %>%
+  sf::st_centroid(data_orig) %>%
+  sf::st_coordinates() %>%
+  as.data.frame() %>%
+  rename(long_dd=X, lat_dd=Y)
+
 # Format data
 data <- data_orig %>%
   # Rename
@@ -43,9 +51,11 @@ data <- data_orig %>%
          area_ha=hectares) %>%
   # Add area (sqkm)
   mutate(area_sqkm=measurements::conv_unit(area_sqmi, "mi2", "km2")) %>%
+  # Add centroids
+  bind_cols(centroids) %>%
   # Arrange
   select(name, name_full, name_short, region, type, ccr, ccr_int,
-         area_sqkm, area_sqmi, area_a, area_ha, everything()) %>%
+         area_sqkm, area_sqmi, area_a, area_ha, long_dd, lat_dd, everything()) %>%
   select(-objectid) %>%
   # Reproject
   sf::st_transform(wgs84)

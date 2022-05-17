@@ -49,3 +49,10 @@ data <- data_orig %>%
 # Export
 write.csv(data, file=file.path(outdir, "2016_2020_average_catch_by_port.csv"), row.names=F)
 
+ports_no_xy <- data %>%
+  filter(is.na(lat_dd))
+
+
+write.csv(ports_no_xy, file="~/Desktop/ports_xy.csv")
+
+
