@@ -67,8 +67,13 @@ table(data$ccr)
 table(data$ccr_int)
 head(data)
 
+# Reduce to SMRs and SMCAs
+mpas_use <- data %>%
+  filter(type %in% c("SMR", "SMCA"))
+
 # Export data
 saveRDS(data, file.path(outdir, "CA_MPA_polygons.Rds"))
+saveRDS(mpas_use, file.path(outdir, "CA_MPA_polygons_smrs_smcas.Rds"))
 
 
 # Plot data
