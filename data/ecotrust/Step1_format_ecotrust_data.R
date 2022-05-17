@@ -36,28 +36,28 @@ data <- data_orig %>%
   count(port_complex, question, response) %>%
   # Format port complex
   mutate(port_complex=recode_factor(port_complex,
-                                    "1"="Crescent City",
-                                    "2"="Trinidad",
-                                    "3"="Eureka",
-                                    "4"="Shelter Cove",
-                                    "5"="Fort Bragg/Albion",
-                                    "6"="Point Arena",
-                                    "7"="Bodega Bay",
-                                    "8"="San Francisco",
-                                    "9"="Princeton/Half Moon Bay",
-                                    "10"="Santa Cruz",
-                                    "11"="Moss Landing",
-                                    "12"="Monterey",
-                                    "13"="Morro Bay/Port San Luis",
-                                    "14"="Santa Barbara",
-                                    "15"="Ventura/Channel Islands",
-                                    "16"="Los Angeles/Long Beach",
-                                    "17"="Orange County",
+                                    "19"="San Diego",
                                     "18"="Oceanside",
-                                    "19"="San Diego")) %>%
+                                    "17"="Orange County",
+                                    "16"="Los Angeles/Long Beach",
+                                    "15"="Ventura/Channel Islands",
+                                    "14"="Santa Barbara",
+                                    "13"="Morro Bay/Port San Luis",
+                                    "12"="Monterey",
+                                    "11"="Moss Landing",
+                                    "10"="Santa Cruz",
+                                    "9"="Princeton/Half Moon Bay",
+                                    "8"="San Francisco",
+                                    "7"="Bodega Bay",
+                                    "6"="Point Arena",
+                                    "5"="Fort Bragg/Albion",
+                                    "4"="Shelter Cove",
+                                    "3"="Eureka",
+                                    "2"="Trinidad",
+                                    "1"="Crescent City")) %>%
   # Format question
   mutate(question=recode(question,
-                         "access_econ"="Access to harvestable resources",
+                         "access_econ"="Access to\nharvestable resources",
                          "covid19"="Covid-19 impacts",
                          "ecological_mpa"="Ecological",
                          "enforcement_mpa"="Enforcement",
@@ -71,8 +71,8 @@ data <- data_orig %>%
                          "marineresourcepresent_env"="Marine resource health-present",
                          "markets_econ"="Markets",
                          "monitoring_mpa"="Monitoring",
-                         "relationshipsexternal_soc"="Social relationships=external",
-                         "relationshipsinternal_soc"="Social relationships-internal")) %>%
+                         "relationshipsexternal_soc"="Social relationships\n(external)",
+                         "relationshipsinternal_soc"="Social relationships\n(internal)")) %>%
   # Arrange
   arrange(port_complex, question) %>%
   # Add prop
@@ -91,17 +91,97 @@ sort(unique(data$question))
 # Plot data
 ################################################################################
 
+# Setup theme
+my_theme <-  theme(axis.text=element_text(size=6),
+                   axis.title=element_text(size=7),
+                   legend.text=element_text(size=6),
+                   legend.title=element_text(size=7),
+                   strip.text=element_text(size=7),
+                   plot.title=element_text(size=8),
+                   # Gridlines
+                   panel.grid.major = element_blank(),
+                   panel.grid.minor = element_blank(),
+                   panel.background = element_blank(),
+                   axis.line = element_line(colour = "black"),
+                   # Legend
+                   legend.position = "bottom",
+                   legend.background = element_rect(fill=alpha('blue', 0)))
+
 # Plot data
-g <- ggplot(data, aes(x=prop, y=port_complex, fill=response %>% as.character())) +
-  facet_wrap(~question) +
+g1 <- ggplot(data %>% filter(category=="MPA"),
+            aes(x=prop, y=port_complex, fill=response %>% as.character())) +
+  facet_wrap(~question, nrow=1) +
   geom_bar(stat="identity", col="grey30", lwd=0.1) +
   # Labels
-  labs(x="Proportion of respondents", y="") +
+  labs(x="Percent of respondents", y="",
+       title="EcoTrust MPA questions") +
+  scale_x_continuous(labels=scales::percent) +
   # Legend
   scale_fill_manual(name="Score", values=RColorBrewer::brewer.pal(5, "RdBu")) +
+  guides(fill = guide_legend(nrow = 1)) +
   # Theme
-  theme_bw()
-g
+  theme_bw() + my_theme
+g1
+
+ggsave(g1, filename=file.path(plotdir, "FigX_ecotrust_mpa_qs.png"),
+       width=6.5, height=3, units="in", dpi=600)
+
+# Plot data
+g2 <- ggplot(data %>% filter(category=="Economic"),
+            aes(x=prop, y=port_complex, fill=response %>% as.character())) +
+  facet_wrap(~question, nrow=1) +
+  geom_bar(stat="identity", col="grey30", lwd=0.1) +
+  # Labels
+  labs(x="Percent of respondents", y="",
+       title="EcoTrust economic questions") +
+  scale_x_continuous(labels=scales::percent) +
+  # Legend
+  scale_fill_manual(name="Score", values=RColorBrewer::brewer.pal(5, "RdBu")) +
+  guides(fill = guide_legend(nrow = 1)) +
+  # Theme
+  theme_bw() + my_theme
+g2
+
+ggsave(g2, filename=file.path(plotdir, "FigX_ecotrust_economic_qs.png"),
+       width=6.5, height=3, units="in", dpi=600)
+
+# Plot data
+g3 <- ggplot(data %>% filter(category=="Environmental"),
+            aes(x=prop, y=port_complex, fill=response %>% as.character())) +
+  facet_wrap(~question, nrow=1) +
+  geom_bar(stat="identity", col="grey30", lwd=0.1) +
+  # Labels
+  labs(x="Percent of respondents", y="",
+       title="EcoTrust environment questions") +
+  scale_x_continuous(labels=scales::percent) +
+  # Legend
+  scale_fill_manual(name="Score", values=RColorBrewer::brewer.pal(5, "RdBu")) +
+  guides(fill = guide_legend(nrow = 1)) +
+  # Theme
+  theme_bw() + my_theme
+g3
+
+ggsave(g3, filename=file.path(plotdir, "FigX_ecotrust_environmental_qs.png"),
+       width=6.5, height=3, units="in", dpi=600)
+
+# Plot data
+g4 <- ggplot(data %>% filter(category=="Social"),
+            aes(x=prop, y=port_complex, fill=response %>% as.character())) +
+  facet_wrap(~question, nrow=1) +
+  geom_bar(stat="identity", col="grey30", lwd=0.1) +
+  # Labels
+  labs(x="Percent of respondents", y="",
+       title="EcoTrust social questions") +
+  scale_x_continuous(labels=scales::percent) +
+  # Legend
+  scale_fill_manual(name="Score", values=RColorBrewer::brewer.pal(5, "RdBu")) +
+  guides(fill = guide_legend(nrow = 1)) +
+  # Theme
+  theme_bw() + my_theme
+g4
+
+ggsave(g4, filename=file.path(plotdir, "FigX_ecotrust_social_qs.png"),
+       width=6.5, height=3, units="in", dpi=600)
 
 
 
