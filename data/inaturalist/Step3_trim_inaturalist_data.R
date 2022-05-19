@@ -27,7 +27,7 @@ data_orig <- readRDS(file=file.path(outdir, "2000_2020_inaturalist_data.Rds"))
 # Read data
 ################################################################################
 
-# Convert points to sf
+# Convert to sf
 data_sf <- data_orig %>%
   sf::st_as_sf(coords=c("long_dd", "lat_dd"), crs=sf::st_crs(mpas))
 
@@ -35,27 +35,28 @@ data_sf <- data_orig %>%
 data_sp <- data_sf %>%
   as(., "Spatial")
 
-# Sample
-data_sf_sample <- data_sf %>%
-  sample_frac(0.1) %>%
-  as(., "Spatial")
-
 # Find points inside MPAs
 inside_which_mpa <- sp::over(data_sp, mpas_simple_sp)
+inside_which_mpa_chr <- inside_which_mpa$name
 
 # Add MPA inside to dataframe
-data_sp1 <- data_sp %>%
+data_sf1 <- data_sp %>%
   as("sf") %>%
-  mutate(mpa=inside_which_mpa)
+  mutate(mpa=inside_which_mpa_chr)
+
+# Convert to dataframe
+data_sf1_df <- data_sf1 %>%
+  sf::st_drop_geometry()
+
+# Export data
+saveRDS(data_sf1_df, file.path(outdir, "2000_2020_inaturalist_data_inside_mpas.Rds"))
 
 
 # Build data
 ################################################################################
 
 # Stats
-stats <- data_sp1 %>%
-  # Drop geometry
-  sf::st_drop_geometry() %>%
+stats <- data_sf1_df %>%
   # Points INSIDE MPAs
   filter(!is.na(mpa)) %>%
   # Number by year and category
@@ -94,7 +95,7 @@ g1 <- ggplot(stats, aes(x=year_obs, y=n, fill=taxa_catg)) +
   scale_fill_discrete(name="Taxa type") +
   # Theme
   theme_bw() + my_theme +
-  theme(legend.position = c(0.2, 0.7))
+  theme(legend.position = c(0.2, 0.6))
 g1
 
 # Plot data
